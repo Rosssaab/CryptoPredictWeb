@@ -5,3 +5,4 @@ numpy>=1.26.0
 scikit-learn>=1.0.0
 plotly>=5.0.0
 requests==2.31.0
+waitress==2.1.2

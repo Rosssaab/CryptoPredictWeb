@@ -2,30 +2,28 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Crypto Predictor</title>
     <link href="https://bootswatch.com/5/pulse/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="/CryptoPrediction/static/css/styles.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="/CryptoPrediction/static/js/script.js"></script>
 </head>
 <body class="bg-dark text-light">
-    <header class="bg-primary text-white py-3 mb-4 shadow">
+    <header class="bg-primary text-white py-2 py-md-3 mb-4 shadow">
         <div class="container">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center" style="width: 200px;">
-                    <a href="https://mywebstuff.co.uk" class="btn btn-outline-light">← Back to My Web Stuff</a>
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center">
+                <div class="d-flex align-items-center mb-2 mb-md-0" style="width: 200px;">
+                    <a href="https://mywebstuff.co.uk" class="btn btn-outline-light btn-sm btn-md">← Back to My Web Stuff</a>
                 </div>
-                <h2 class="mb-0 flex-grow-1 text-center fw-bold">Crypto Price Predictor</h2>
-                <div style="width: 200px;">
-                    <nav class="text-end">
-                        <a href="#" class="text-white text-decoration-none mx-2" data-bs-toggle="modal" data-bs-target="#aboutModal">Disclaimer</a>
-                        <a href="#" class="text-white text-decoration-none mx-2" data-bs-toggle="modal" data-bs-target="#howItWorksModal">How it Works</a>
-                        <a href="mailto:rosssaab@live.com?subject=Enquiry%20from%20Crypto%20Predictor%20site" class="text-white text-decoration-none mx-2">Contact</a>
-                    </nav>
-                </div>
+                <h2 class="mb-2 mb-md-0 text-center fw-bold fs-4 fs-md-2">Crypto Price Predictor</h2>
+                <nav class="text-center text-md-end" style="width: 200px;">
+                    <a href="#" class="text-white text-decoration-none mx-1 mx-md-2" data-bs-toggle="modal" data-bs-target="#aboutModal">Disclaimer</a>
+                    <a href="#" class="text-white text-decoration-none mx-1 mx-md-2" data-bs-toggle="modal" data-bs-target="#howItWorksModal">How it Works</a>
+                    <a href="mailto:rosssaab@live.com?subject=Enquiry%20from%20Crypto%20Predictor%20site" class="text-white text-decoration-none mx-1 mx-md-2">Contact</a>
+                </nav>
             </div>
         </div>
     </header>
@@ -33,9 +31,9 @@
     <div class="container">
         <div class="card bg-secondary text-light shadow-sm mb-4">
             <div class="card-body">
-                <h1 class="card-title text-light mb-4">Cryptocurrency Price Predictor</h1>
-                <div class="controls mb-4 d-flex gap-3 align-items-end justify-content-start">
-                    <div class="form-group" style="min-width: 200px;">
+                <h1 class="card-title text-light mb-4 fs-3 fs-md-2">Cryptocurrency Price Predictor</h1>
+                <div class="controls mb-4 d-flex flex-column flex-md-row gap-2 gap-md-3 align-items-stretch align-items-md-end">
+                    <div class="form-group flex-grow-1">
                         <label for="cryptoSelect" class="form-label">Cryptocurrency</label>
                         <select id="cryptoSelect" class="form-select">
                             <option value="" selected disabled>Select a cryptocurrency</option>
@@ -44,7 +42,7 @@
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="form-group" style="min-width: 200px;">
+                    <div class="form-group flex-grow-1">
                         <label for="periodSelect" class="form-label">Historical Period</label>
                         <select id="periodSelect" class="form-select">
                             <option value="3mo">3 Months</option>
@@ -54,7 +52,7 @@
                             <option value="5y">5 Years</option>
                         </select>
                     </div>
-                    <div class="form-group" style="min-width: 200px;">
+                    <div class="form-group flex-grow-1">
                         <label for="predictPeriodSelect" class="form-label">Prediction Period</label>
                         <select id="predictPeriodSelect" class="form-select">
                             <option value="1">1 Day</option>
@@ -64,9 +62,27 @@
                             <option value="180">6 Months</option>
                         </select>
                     </div>
-                    <button id="predictBtn" class="btn btn-primary px-4">Predict</button>
+                    <button id="predictBtn" class="btn btn-primary px-4 mt-3 mt-md-0">Predict</button>
                 </div>
                 <div id="chart" class="bg-dark border-light rounded p-2"></div>
+                <div id="priceInfo" class="price-info mt-4" style="display: none;">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Current Price</h5>
+                            <p id="currentPrice">Loading...</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Predicted Price</h5>
+                            <p id="predictedPrice">Loading...</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="stopLossInfo" class="stop-loss-info alert alert-info mt-3" style="display: none;">
+                    <h5>Trading Recommendations</h5>
+                    <p>Best time to buy: <strong>04:00 GMT</strong></p>
+                    <p>Best time to sell: <strong>14:00 GMT</strong></p>
+                    <p>Recommended stop-loss: <span id="stopLoss">Loading...</span></p>
+                </div>
                 <div id="loading" class="alert alert-info text-center" style="display: none;">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Loading...</span>

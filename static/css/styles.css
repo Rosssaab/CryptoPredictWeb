@@ -9,37 +9,12 @@ body {
     padding: 20px;
 }
 
-.crypto-selector {
-    margin: 20px 0;
-}
-
-button {
-    padding: 10px 20px;
-    margin: 0 10px;
-    font-size: 16px;
-    cursor: pointer;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 5px;
-}
-
-button:hover {
-    background-color: #45a049;
-}
-
 #chart {
     background: #F5F5F0;
     border-radius: 10px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     margin-top: 20px;
     width: 100%;
-}
-
-#loading {
-    margin: 20px;
-    font-size: 18px;
-    color: #666;
 }
 
 .price-info {
@@ -58,7 +33,6 @@ button:hover {
     color: white !important;
 }
 
-/* Mobile responsiveness */
 @media (max-width: 768px) {
     .container {
         padding: 0.5rem;
