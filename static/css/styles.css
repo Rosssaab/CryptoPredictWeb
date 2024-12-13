@@ -1,8 +1,12 @@
+body {
+    min-height: 100vh;
+    background: linear-gradient(to bottom, #2C3E50, #1a252f);
+}
+
 .container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
-    text-align: center;
 }
 
 .crypto-selector {
@@ -25,12 +29,63 @@ button:hover {
 }
 
 #chart {
+    background: #F5F5F0;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     margin-top: 20px;
-    height: 600px;
+    width: 100%;
 }
 
 #loading {
     margin: 20px;
     font-size: 18px;
     color: #666;
+}
+
+.price-info {
+    background: rgba(44, 62, 80, 0.9);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    margin-top: 20px !important;
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.stop-loss-info {
+    background: rgba(44, 62, 80, 0.9) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .container {
+        padding: 0.5rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .form-group {
+        margin-bottom: 0.5rem;
+    }
+    
+    .btn {
+        width: 100%;
+    }
+    
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+    
+    .price-info {
+        font-size: 14px !important;
+    }
+    
+    .stop-loss-info {
+        font-size: 14px !important;
+        padding: 0.5rem !important;
+    }
 }

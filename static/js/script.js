@@ -1,3 +1,7 @@
+function getChartHeight() {
+    return window.innerWidth < 768 ? 400 : 600;
+}
+
 function getPrediction(symbol) {
     const period = document.getElementById('periodSelect').value;
     const predictDays = document.getElementById('predictPeriodSelect').value;
@@ -85,13 +89,14 @@ function getPrediction(symbol) {
                     gridcolor: '#CCCCCC',
                     fixedrange: false
                 },
-                height: 800,
+                height: getChartHeight(),
+                width: window.innerWidth < 768 ? window.innerWidth - 40 : 1100,
                 autosize: true,
                 margin: {
-                    b: 80,
-                    l: 80,
-                    r: 80,
-                    t: 50,
+                    b: window.innerWidth < 768 ? 50 : 60,
+                    l: window.innerWidth < 768 ? 50 : 60,
+                    r: window.innerWidth < 768 ? 40 : 60,
+                    t: window.innerWidth < 768 ? 40 : 50,
                     pad: 10
                 },
                 showlegend: true,
@@ -185,5 +190,19 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         getPrediction(symbol);
+    });
+});
+
+window.addEventListener('resize', function() {
+    Plotly.relayout('chart', {
+        height: getChartHeight(),
+        width: window.innerWidth < 768 ? window.innerWidth - 40 : 1100,
+        margin: {
+            b: window.innerWidth < 768 ? 50 : 60,
+            l: window.innerWidth < 768 ? 50 : 60,
+            r: window.innerWidth < 768 ? 40 : 60,
+            t: window.innerWidth < 768 ? 40 : 50,
+            pad: 10
+        }
     });
 }); 
