@@ -57,7 +57,7 @@ def index():
 @app.route('/predict/<symbol>')
 def predict(symbol):
     try:
-        period = request.args.get('period', '6mo')
+        period = request.args.get('period', '3mo')
         predict_days = int(request.args.get('predict_days', '7'))
         
         # Fetch data
@@ -85,6 +85,11 @@ def predict(symbol):
             freq='D'
         )[1:]
         
+        # Get current price and final prediction
+        current_price = data['Close'].iloc[-1]
+        final_prediction = predictions[-1]
+        final_date = dates[-1]
+        
         chart_data = {
             'historical': {
                 'dates': data.index.strftime('%Y-%m-%d').tolist(),
@@ -93,6 +98,11 @@ def predict(symbol):
             'predictions': {
                 'dates': dates.strftime('%Y-%m-%d').tolist(),
                 'prices': predictions.tolist()
+            },
+            'summary': {
+                'current_price': round(current_price, 2),
+                'final_prediction': round(final_prediction, 2),
+                'final_date': final_date.strftime('%Y-%m-%d')
             }
         }
         
