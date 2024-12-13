@@ -8,52 +8,99 @@ import plotly.graph_objects as go
 import datetime
 import requests
 from waitress import serve
+from binance.client import Client
+from config import BINANCE_API_KEY, BINANCE_SECRET_KEY
 
 app = Flask(__name__)
 app.config['APPLICATION_ROOT'] = '/CryptoPrediction'
 app.config['PREFERRED_URL_SCHEME'] = 'https'
 
-def get_top_cryptos():
-    url = "https://api.coingecko.com/api/v3/coins/markets"
-    params = {
-        "vs_currency": "usd",
-        "order": "market_cap_desc",
-        "per_page": 30,
-        "page": 1,
-        "sparkline": False
-    }
-
+def get_binance_client():
+    """Initialize Binance client"""
     try:
-        response = requests.get(url, params=params)
-        response.raise_for_status()
-        data = response.json()
+        client = Client(BINANCE_API_KEY, BINANCE_SECRET_KEY)
+        return client
+    except Exception as e:
+        raise Exception(f"Failed to initialize Binance client: {str(e)}")
 
-        stablecoins = ['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD', 'USDP', 'USDD']
+def fetch_crypto_data(symbol, period='2y', interval='2h'):
+    """
+    Fetch cryptocurrency data from Binance
+    symbol: str - Cryptocurrency symbol (e.g., 'BTC', 'ETH')
+    period: str - Time period ('3mo', '6mo', '1y', '2y', '5y')
+    interval: str - Data interval ('2h', '4h', '1d')
+    """
+    try:
+        client = get_binance_client()
         
-        cryptos = []
-        for coin in data:
-            symbol = coin['symbol'].upper()
-            if symbol not in stablecoins:
-                cryptos.append(symbol)
-                if len(cryptos) == 20:
-                    break
-
-        return cryptos
-
+        # Convert period to milliseconds
+        period_map = {
+            '3mo': '90 days ago UTC',
+            '6mo': '180 days ago UTC',
+            '1y': '365 days ago UTC',
+            '2y': '730 days ago UTC',
+            '5y': '1825 days ago UTC'
+        }
+        start_str = period_map.get(period, '730 days ago UTC')
+        
+        # Convert interval to Binance format
+        interval_map = {
+            '2h': Client.KLINE_INTERVAL_2HOUR,
+            '4h': Client.KLINE_INTERVAL_4HOUR,
+            '1d': Client.KLINE_INTERVAL_1DAY
+        }
+        binance_interval = interval_map.get(interval, Client.KLINE_INTERVAL_2HOUR)
+        
+        print(f"Fetching {symbol} data with {interval} interval")
+        
+        # Fetch data from Binance
+        klines = client.get_historical_klines(
+            f"{symbol}USDT",
+            binance_interval,
+            start_str=start_str
+        )
+        
+        if not klines:
+            raise ValueError(f"No data available for {symbol}")
+        
+        # Convert to DataFrame with correct column names
+        df = pd.DataFrame(klines, columns=[
+            'timestamp', 'Open', 'High', 'Low', 'Close', 'Volume',
+            'close_time', 'quote_volume', 'trades', 'taker_buy_base',
+            'taker_buy_quote', 'ignored'
+        ])
+        
+        # Convert timestamps to datetime
+        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+        df.set_index('timestamp', inplace=True)
+        
+        # Convert string values to float
+        numeric_columns = ['Open', 'High', 'Low', 'Close', 'Volume']
+        for col in numeric_columns:
+            df[col] = df[col].astype(float)
+        
+        # Add technical indicators
+        df['Hour'] = df.index.hour
+        df['DayOfWeek'] = df.index.dayofweek
+        
+        return df
+        
     except Exception as e:
-        print(f"Error fetching top cryptos: {e}")
-        return ['BTC', 'ETH', 'BNB', 'XRP', 'SOL', 'ADA', 'DOGE', 'TRX', 'LINK', 'DOT', 
-                'MATIC', 'TON', 'AVAX', 'UNI', 'ICP', 'ATOM', 'XLM', 'LTC', 'BCH', 'XMR']
+        print(f"Debug - Error details: {str(e)}")  # Add debug print
+        raise Exception(f"Error fetching data from Binance: {str(e)}")
 
-def fetch_crypto_data(symbol, period='3mo'):
+# Update the symbol list to match available Binance pairs
+def get_available_cryptos():
+    """Get list of available cryptocurrencies"""
     try:
-        ticker = yf.Ticker(f"{symbol}-USD")
-        data = ticker.history(period=period)
-        if data.empty:
-            raise ValueError(f"No data found for {symbol}")
-        return data
+        client = get_binance_client()
+        info = client.get_exchange_info()
+        # Filter for USDT pairs and remove the USDT suffix
+        symbols = [s['symbol'][:-4] for s in info['symbols'] 
+                  if s['symbol'].endswith('USDT') and s['status'] == 'TRADING']
+        return sorted(symbols)
     except Exception as e:
-        raise ValueError(f"Error fetching data for {symbol}: {str(e)}")
+        return ['BTC', 'ETH', 'BNB', 'XRP', 'ADA']  # Fallback to major cryptos
 
 def prepare_data(data):
     if len(data) < 2:
@@ -111,7 +158,7 @@ def create_and_train_model(X, y):
 
 @app.route('/')
 def index():
-    cryptos = get_top_cryptos()
+    cryptos = get_available_cryptos()
     return render_template('index.html', cryptos=cryptos)
 
 @app.route('/predict/<symbol>')
