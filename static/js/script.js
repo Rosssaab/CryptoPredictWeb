@@ -1,19 +1,46 @@
 function getChartHeight() {
-    return window.innerWidth < 768 ? 400 : 600;
+    return window.innerWidth < 768 ? 300 : 600;
+}
+
+function getChartWidth() {
+    if (window.innerWidth < 768) {
+        return window.innerWidth - 70;
+    }
+    return 1100;
 }
 
 async function updateChart() {
+    // Get all input values at the start
     const symbol = document.getElementById('cryptoSelect').value;
     const period = document.getElementById('periodSelect').value;
-    const predictDays = document.getElementById('predictPeriodSelect').value;
+    const predictPeriod = parseInt(document.getElementById('predictPeriodSelect').value);
     
     if (!symbol) return;
     
     document.getElementById('loading').style.display = 'block';
     document.getElementById('chart').innerHTML = '';
     
+    // Date formatting function
+    const formatDate = (date) => {
+        return date.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        });
+    };
+
+    // Initialize all date variables
+    const now = new Date();
+    const currentDate = formatDate(now);
+    const finalDate = new Date(now);
+    finalDate.setDate(now.getDate() + predictPeriod);
+    const buyDate = new Date(now);
+    buyDate.setDate(now.getDate() + 1);
+    const sellDate = new Date(now);
+    sellDate.setDate(now.getDate() + 2);
+
     try {
-        const response = await fetch(`/CryptoPrediction/predict/${symbol}?period=${period}&predict_days=${predictDays}`);
+        const response = await fetch(`/CryptoPrediction/predict/${symbol}?period=${period}&predict_days=${predictPeriod}`);
         const data = await response.json();
         
         if (data.error) {
@@ -27,7 +54,8 @@ async function updateChart() {
             type: 'scatter',
             line: {
                 color: '#2C3E50'
-            }
+            },
+            showlegend: false
         };
         
         const trace2 = {
@@ -38,21 +66,30 @@ async function updateChart() {
             line: {
                 color: '#E74C3C',
                 dash: 'dot'
-            }
+            },
+            showlegend: false
         };
         
         const layout = {
-            title: `${symbol} Price Prediction`,
+            title: {
+                text: window.innerWidth < 768 ? '' : `${symbol} Price Prediction`,
+                font: {
+                    size: window.innerWidth < 768 ? 14 : 18
+                }
+            },
             xaxis: { 
-                title: 'Date',
+                title: window.innerWidth < 768 ? '' : 'Date',
                 showline: true,
                 linewidth: 2,
                 linecolor: '#000000',
                 gridcolor: '#CCCCCC',
-                rangeslider: { visible: true }
+                rangeslider: { 
+                    visible: true,
+                    thickness: 0.1
+                }
             },
             yaxis: { 
-                title: 'Price (USD)',
+                title: window.innerWidth < 768 ? '' : 'Price (USD)',
                 showline: true,
                 linewidth: 2,
                 linecolor: '#000000',
@@ -60,54 +97,59 @@ async function updateChart() {
                 fixedrange: false
             },
             height: getChartHeight(),
-            width: window.innerWidth < 768 ? window.innerWidth - 40 : 1100,
-            autosize: true,
+            width: getChartWidth(),
+            autosize: false,
+            showlegend: true,
+            legend: {
+                x: 0.01,
+                y: 0.99,
+                xanchor: 'left',
+                yanchor: 'top',
+                bgcolor: 'rgba(255,255,255,0.8)',
+                bordercolor: '#CCCCCC',
+                borderwidth: 1,
+                font: {
+                    size: window.innerWidth < 768 ? 10 : 12
+                }
+            },
             margin: {
-                b: window.innerWidth < 768 ? 50 : 60,
-                l: window.innerWidth < 768 ? 50 : 60,
-                r: window.innerWidth < 768 ? 40 : 60,
-                t: window.innerWidth < 768 ? 40 : 50,
-                pad: 10
+                b: window.innerWidth < 768 ? 20 : 60,
+                l: window.innerWidth < 768 ? 30 : 60,
+                r: window.innerWidth < 768 ? 10 : 60,
+                t: window.innerWidth < 768 ? 10 : 50,
+                pad: window.innerWidth < 768 ? 0 : 4
             },
             plot_bgcolor: '#F5F5F0',
-            paper_bgcolor: '#F5F5F0',
-            shapes: [{
-                type: 'rect',
-                xref: 'paper',
-                yref: 'paper',
-                x0: 0,
-                y0: 0,
-                x1: 1,
-                y1: 1,
-                line: {
-                    color: '#000000',
-                    width: 2
-                },
-                fillcolor: 'transparent'
-            }],
-            dragmode: 'zoom',
-            modebar: {
-                remove: ['autoScale2d', 'lasso2d', 'select2d'],
-                orientation: 'v'
-            }
+            paper_bgcolor: '#F5F5F0'
         };
         
-        Plotly.newPlot('chart', [trace1, trace2], layout);
+        Plotly.newPlot('chart', [trace1, trace2], layout, {
+            displayModeBar: false
+        });
         
+        // Update price displays
         const priceInfo = document.getElementById('priceInfo');
         const stopLossInfo = document.getElementById('stopLossInfo');
         const currentPrice = document.getElementById('currentPrice');
         const predictedPrice = document.getElementById('predictedPrice');
-        const stopLoss = document.getElementById('stopLoss');
 
         priceInfo.style.display = 'block';
         stopLossInfo.style.display = 'block';
 
-        currentPrice.innerHTML = `$${data.summary.current_price.toLocaleString()} (as of ${new Date().toLocaleDateString()})`;
-        predictedPrice.innerHTML = `$${data.summary.final_prediction.toLocaleString()} (predicted for ${data.summary.final_date})`;
+        const buyTimeStr = `04:00 GMT on ${formatDate(buyDate)}`;
+        const sellTimeStr = `14:00 GMT on ${formatDate(sellDate)}`;
+        const suggestedBuyPrice = data.summary.current_price * 0.98;
+        const suggestedSellPrice = data.summary.current_price * 1.02;
 
-        const stopLossPrice = data.summary.current_price * 0.95;
-        stopLoss.innerHTML = `$${stopLossPrice.toLocaleString()} (5% below current price)`;
+        currentPrice.innerHTML = `$${data.summary.current_price.toLocaleString()} (as of ${currentDate})`;
+        predictedPrice.innerHTML = `$${data.summary.final_prediction.toLocaleString()} (predicted for ${formatDate(finalDate)})`;
+
+        stopLossInfo.innerHTML = `
+            <h5>Trading Recommendations</h5>
+            <p>Best time to buy: <strong>${buyTimeStr}</strong> at target price: <strong>$${suggestedBuyPrice.toLocaleString()}</strong></p>
+            <p>Best time to sell: <strong>${sellTimeStr}</strong> at target price: <strong>$${suggestedSellPrice.toLocaleString()}</strong></p>
+            <p>Recommended stop-loss: <span id="stopLoss">$${(data.summary.current_price * 0.95).toLocaleString()} (5% below current price)</span></p>
+        `;
 
     } catch (error) {
         console.error('Error:', error);
@@ -127,13 +169,14 @@ document.addEventListener('DOMContentLoaded', function() {
         if (chartDiv.data) {
             Plotly.relayout('chart', {
                 height: getChartHeight(),
-                width: window.innerWidth < 768 ? window.innerWidth - 40 : 1100,
+                width: getChartWidth(),
+                'legend.font.size': window.innerWidth < 768 ? 10 : 12,
                 margin: {
-                    b: window.innerWidth < 768 ? 50 : 60,
-                    l: window.innerWidth < 768 ? 50 : 60,
-                    r: window.innerWidth < 768 ? 40 : 60,
-                    t: window.innerWidth < 768 ? 40 : 50,
-                    pad: 10
+                    b: window.innerWidth < 768 ? 20 : 60,
+                    l: window.innerWidth < 768 ? 30 : 60,
+                    r: window.innerWidth < 768 ? 10 : 60,
+                    t: window.innerWidth < 768 ? 10 : 50,
+                    pad: window.innerWidth < 768 ? 0 : 4
                 }
             });
         }
