@@ -6,13 +6,45 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.svm import SVR
 import plotly.graph_objects as go
 import datetime
+import requests
 
 app = Flask(__name__)
 
-TOP_CRYPTOS = [
-    'BTC', 'ETH', 'USDT', 'BNB', 'SOL',
-    'XRP', 'USDC', 'ADA', 'AVAX', 'DOGE'
-]
+def get_top_cryptos():
+    # CoinGecko API endpoint for top cryptocurrencies by market cap
+    url = "https://api.coingecko.com/api/v3/coins/markets"
+    params = {
+        "vs_currency": "usd",
+        "order": "market_cap_desc",
+        "per_page": 30,  # Fetch more than 20 to account for filtered coins
+        "page": 1,
+        "sparkline": False
+    }
+
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+
+        # List of stablecoins to exclude
+        stablecoins = ['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD', 'USDP', 'USDD']
+        
+        # Filter out stablecoins and get symbols
+        cryptos = []
+        for coin in data:
+            symbol = coin['symbol'].upper()
+            if symbol not in stablecoins:
+                cryptos.append(symbol)
+                if len(cryptos) == 20:  # Stop after getting 20 non-stablecoin cryptos
+                    break
+
+        return cryptos
+
+    except Exception as e:
+        print(f"Error fetching top cryptos: {e}")
+        # Fallback to a default list if API fails
+        return ['BTC', 'ETH', 'BNB', 'XRP', 'SOL', 'ADA', 'DOGE', 'TRX', 'LINK', 'DOT', 
+                'MATIC', 'TON', 'AVAX', 'UNI', 'ICP', 'ATOM', 'XLM', 'LTC', 'BCH', 'XMR']
 
 def fetch_crypto_data(symbol, period='6mo'):
     """Fetch historical cryptocurrency data"""
@@ -52,7 +84,8 @@ def create_and_train_model(X, y):
 
 @app.route('/')
 def index():
-    return render_template('index.html', cryptos=TOP_CRYPTOS)
+    cryptos = get_top_cryptos()
+    return render_template('index.html', cryptos=cryptos)
 
 @app.route('/predict/<symbol>')
 def predict(symbol):
