@@ -137,36 +137,43 @@ async function updateChart() {
             },
             yAxis: {
                 title: {
-                    text: 'Price (USD)'
+                    text: 'Price (USD)',
+                    style: {
+                        fontSize: window.innerWidth < 768 ? '12px' : '14px'
+                    }
                 },
                 labels: {
-                    formatter: function() {
-                        return '$' + formatPrice(this.value);
+                    style: {
+                        fontSize: window.innerWidth < 768 ? '10px' : '12px'
                     }
                 }
             },
-            tooltip: {
-                shared: true,
-                formatter: function() {
-                    let tooltip = '<b>' + Highcharts.dateFormat('%e %b %Y', this.x) + '</b><br/>';
-                    this.points.forEach(point => {
-                        tooltip += `${point.series.name}: <b>$${formatPrice(point.y)}</b><br/>`;
-                    });
-                    return tooltip;
-                }
-            },
             series: [{
-                name: 'Historical',
+                name: 'Historical Price',
                 data: historicalSeries,
-                color: '#2C3E50',
+                color: '#000000',
                 lineWidth: 2
             }, {
-                name: 'AI Predictions',
+                name: 'Predicted Price',
                 data: predictionSeries,
-                color: '#E74C3C',
-                dashStyle: 'Dash',
+                color: '#7C4DFF',
+                dashStyle: 'dash',
                 lineWidth: 2
             }],
+            tooltip: {
+                shared: true,
+                split: false,
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                style: {
+                    color: '#FFFFFF'
+                }
+            },
+            legend: {
+                enabled: true,
+                itemStyle: {
+                    fontSize: window.innerWidth < 768 ? '10px' : '12px'
+                }
+            },
             plotOptions: {
                 series: {
                     animation: {
@@ -176,37 +183,6 @@ async function updateChart() {
                         enabled: false
                     }
                 }
-            },
-            credits: {
-                enabled: false
-            },
-            rangeSelector: {
-                enabled: true,
-                buttons: [{
-                    type: 'day',
-                    count: 7,
-                    text: '1W'
-                }, {
-                    type: 'month',
-                    count: 1,
-                    text: '1M'
-                }, {
-                    type: 'month',
-                    count: 3,
-                    text: '3M'
-                }, {
-                    type: 'month',
-                    count: 6,
-                    text: '6M'
-                }, {
-                    type: 'year',
-                    count: 1,
-                    text: '1Y'
-                }, {
-                    type: 'all',
-                    text: 'All'
-                }],
-                selected: 0
             }
         });
 
@@ -232,6 +208,7 @@ async function updateChart() {
 
         let tradingAdvice = '';
         if (percentChange > 5) {
+            // Positive outlook
             tradingAdvice = `
                 <div class="row">
                     <div class="col-12">
@@ -252,6 +229,7 @@ async function updateChart() {
                     </div>
                 </div>`;
         } else if (percentChange < -5) {
+            // Negative outlook
             tradingAdvice = `
                 <div class="row">
                     <div class="col-12">
@@ -272,6 +250,7 @@ async function updateChart() {
                     </div>
                 </div>`;
         } else {
+            // Neutral outlook
             tradingAdvice = `
                 <div class="row">
                     <div class="col-12">
@@ -320,6 +299,103 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!crypto.id) return crypto.text;
         return $(`<span><strong>${crypto.text}</strong></span>`);
     }
+
+    const suggestBtn = document.getElementById('suggestBtn');
+    const analyzeCoinBtn = document.getElementById('analyzeCoinBtn');
+    const suggestionModal = new bootstrap.Modal(document.getElementById('suggestionModal'));
+    
+    suggestBtn.addEventListener('click', function() {
+        const predictPeriod = document.getElementById('predictPeriodSelect').value;
+        const periodText = predictPeriod == 1 ? '1 day' : 
+                          predictPeriod == 7 ? '1 week' : 
+                          predictPeriod == 30 ? '1 month' : 
+                          predictPeriod == 90 ? '3 months' : '6 months';
+        
+        document.getElementById('selectedPeriod').textContent = periodText;
+        document.getElementById('suggestionResults').style.display = 'none';
+        document.getElementById('suggestionLoading').style.display = 'none';
+        document.getElementById('analyzeCoinBtn').style.display = 'block';
+        suggestionModal.show();
+    });
+
+    analyzeCoinBtn.addEventListener('click', async function() {
+        const predictPeriod = document.getElementById('predictPeriodSelect').value;
+        const resultsDiv = document.getElementById('suggestionResults');
+        const loadingDiv = document.getElementById('suggestionLoading');
+        
+        analyzeCoinBtn.style.display = 'none';
+        loadingDiv.style.display = 'block';
+        
+        try {
+            const baseUrl = window.location.origin + window.location.pathname;
+            const suggestUrl = `${baseUrl}suggest?predict_days=${predictPeriod}`;
+            console.log('Attempting to fetch from:', suggestUrl);
+            
+            const response = await fetch(suggestUrl);
+            console.log('Response status:', response.status);
+            const responseText = await response.text();
+            console.log('Response text:', responseText);
+            
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (e) {
+                console.error('Error parsing JSON:', e);
+                throw new Error('Invalid response format');
+            }
+            
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            let html = `
+                <h6 class="text-success mb-3">Top 3 Recommended Cryptocurrencies:</h6>
+                <div class="list-group">
+            `;
+
+            data.suggestions.forEach((coin, index) => {
+                html += `
+                    <div class="list-group-item bg-dark text-light border-success">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">${index + 1}. ${coin.symbol}</h6>
+                                <p class="mb-1 text-success">Predicted Growth: ${coin.predicted_growth.toFixed(2)}%</p>
+                            </div>
+                            <button class="btn btn-outline-success btn-sm select-coin" 
+                                    data-coin="${coin.symbol}">
+                                Select
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+            resultsDiv.innerHTML = html;
+            resultsDiv.style.display = 'block';
+            
+            // Add event listeners to select buttons
+            document.querySelectorAll('.select-coin').forEach(button => {
+                button.addEventListener('click', function() {
+                    const coinSymbol = this.getAttribute('data-coin');
+                    document.getElementById('cryptoSelect').value = coinSymbol;
+                    suggestionModal.hide();
+                    // Trigger prediction for selected coin
+                    document.getElementById('predictBtn').click();
+                });
+            });
+
+        } catch (error) {
+            resultsDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    Error: ${error.message}
+                </div>
+            `;
+            resultsDiv.style.display = 'block';
+        } finally {
+            loadingDiv.style.display = 'none';
+        }
+    });
 
     document.getElementById('predictBtn').addEventListener('click', updateChart);
     

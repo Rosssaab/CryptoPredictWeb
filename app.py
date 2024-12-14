@@ -89,7 +89,6 @@ def fetch_crypto_data(symbol, period='2y', interval='2h'):
         print(f"Debug - Error details: {str(e)}")  # Add debug print
         raise Exception(f"Error fetching data from Binance: {str(e)}")
 
-# Update the symbol list to match available Binance pairs
 def get_available_cryptos():
     """Get list of available cryptocurrencies"""
     try:
@@ -260,6 +259,24 @@ def predict(symbol):
         
     except Exception as e:
         return jsonify({'error': str(e)}), 400
+
+@app.route('/suggest')
+def suggest_coins():
+    try:
+        predict_days = int(request.args.get('predict_days', '7'))
+        client = get_binance_client()
+        
+        # For testing, return just a few pairs
+        test_suggestions = [
+            {"symbol": "BTC", "predicted_growth": 5.2},
+            {"symbol": "ETH", "predicted_growth": 4.8},
+            {"symbol": "BNB", "predicted_growth": 3.9}
+        ]
+        
+        return jsonify({"suggestions": test_suggestions})
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
 
 if __name__ == '__main__':
     print("Starting Crypto Prediction server on port 8087...")
