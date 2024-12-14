@@ -273,9 +273,9 @@ def suggest_coins():
         # Filter for coins with positive 24h change first
         positive_pairs = [t for t in usdt_pairs if float(t['priceChangePercent']) > 0]
         
-        # Sort by volume and get top 20
+        # Sort by volume and get top 25 (increased from 20 to ensure we have enough after filtering)
         positive_pairs.sort(key=lambda x: float(x['volume']), reverse=True)
-        top_pairs = positive_pairs[:20]
+        top_pairs = positive_pairs[:25]  # Increased pool size
         
         suggestions = []
         for ticker in top_pairs:
@@ -323,9 +323,9 @@ def suggest_coins():
                 print(f"Error analyzing {symbol}: {str(e)}")
                 continue
         
-        # Sort by predicted growth and get top 3
+        # Sort by predicted growth and get top 5 (changed from 3)
         suggestions.sort(key=lambda x: x['predicted_growth'], reverse=True)
-        top_suggestions = suggestions[:3]
+        top_suggestions = suggestions[:5]  # Changed from [:3] to [:5]
         
         # Format numbers for response
         formatted_suggestions = [{
