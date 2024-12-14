@@ -22,7 +22,7 @@ function generatePriceVariations(startPrice, endPrice, numPoints) {
     return prices;
 }
 
-let priceChart = null;
+let priceChart = null; // Global chart reference
 
 async function updateChart() {
     const symbol = document.getElementById('cryptoSelect').value;
@@ -73,98 +73,123 @@ async function updateChart() {
         const variedPredictions = generatePriceVariations(startPrice, endPrice, numPredictionPoints);
 
         // Prepare data series
-        const historicalSeries = data.historical.prices.map((price, index) => [
-            new Date(data.historical.dates[index]).getTime(),
-            price
-        ]);
+        const historicalSeries = data.historical.prices.map((price, index) => ({
+            x: new Date(data.historical.dates[index]).getTime(),
+            y: price
+        }));
 
-        const predictionSeries = variedPredictions.map((price, index) => [
-            new Date(data.predictions.dates[index]).getTime(),
-            price
-        ]);
+        const predictionSeries = variedPredictions.map((price, index) => ({
+            x: new Date(data.predictions.dates[index]).getTime(),
+            y: price
+        }));
 
-        // Highcharts configuration
-        priceChart = Highcharts.chart('chart', {
+        // ApexCharts configuration
+        const options = {
+            series: [{
+                name: 'Historical',
+                data: historicalSeries
+            }, {
+                name: 'AI Predictions',
+                data: predictionSeries
+            }],
             chart: {
+                type: 'line',
                 height: getChartHeight(),
-                backgroundColor: 'transparent',
-                style: {
-                    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                animations: {
+                    enabled: true,
+                    easing: 'easeinout',
+                    speed: 800
+                },
+                toolbar: {
+                    show: window.innerWidth >= 768,
+                    tools: {
+                        download: true,
+                        selection: true,
+                        zoom: true,
+                        zoomin: true,
+                        zoomout: true,
+                        pan: true,
+                        reset: true
+                    }
+                },
+                zoom: {
+                    enabled: window.innerWidth >= 768
                 }
             },
+            stroke: {
+                curve: 'smooth',
+                width: [2, 2],
+                dashArray: [0, 5]
+            },
+            colors: ['#2C3E50', '#E74C3C'],
             title: {
                 text: `${symbol} Price Prediction`,
+                align: 'left',
                 style: {
-                    fontSize: window.innerWidth < 768 ? '14px' : '18px'
+                    fontSize: window.innerWidth < 768 ? '14px' : '18px',
+                    color: '#fff'
                 }
             },
-            xAxis: {
+            xaxis: {
                 type: 'datetime',
                 labels: {
-                    format: '{value:%e %b %Y}'
+                    style: {
+                        colors: '#fff'
+                    },
+                    datetimeFormatter: {
+                        year: 'yyyy',
+                        month: 'MMM \'yy',
+                        day: 'dd MMM',
+                        hour: 'HH:mm'
+                    }
                 }
             },
-            yAxis: {
-                title: {
-                    text: 'Price (USD)'
-                },
+            yaxis: {
                 labels: {
-                    formatter: function() {
-                        return '$' + formatPrice(this.value);
+                    style: {
+                        colors: '#fff'
+                    },
+                    formatter: function(value) {
+                        return '$' + formatPrice(value);
+                    }
+                },
+                title: {
+                    text: 'Price (USD)',
+                    style: {
+                        color: '#fff'
                     }
                 }
             },
             tooltip: {
                 shared: true,
-                formatter: function() {
-                    let tooltip = '<b>' + Highcharts.dateFormat('%e %b %Y', this.x) + '</b><br/>';
-                    this.points.forEach(point => {
-                        tooltip += `${point.series.name}: <b>$${formatPrice(point.y)}</b><br/>`;
-                    });
-                    return tooltip;
-                }
-            },
-            series: [{
-                name: 'Historical',
-                data: historicalSeries,
-                color: '#2C3E50',
-                lineWidth: 2
-            }, {
-                name: 'AI Predictions',
-                data: predictionSeries,
-                color: '#E74C3C',
-                dashStyle: 'Dash',
-                lineWidth: 2
-            }],
-            responsive: {
-                rules: [{
-                    condition: {
-                        maxWidth: 768
-                    },
-                    chartOptions: {
-                        legend: {
-                            enabled: true,
-                            layout: 'horizontal',
-                            align: 'center',
-                            verticalAlign: 'bottom'
-                        }
-                    }
-                }]
-            },
-            plotOptions: {
-                series: {
-                    animation: {
-                        duration: 1000
-                    },
-                    marker: {
-                        enabled: false
+                x: {
+                    format: 'dd MMM yyyy'
+                },
+                y: {
+                    formatter: function(value) {
+                        return '$' + formatPrice(value);
                     }
                 }
             },
-            credits: {
-                enabled: false
+            grid: {
+                borderColor: '#334455',
+                strokeDashArray: 5,
+            },
+            legend: {
+                position: 'top',
+                horizontalAlign: 'right',
+                labels: {
+                    colors: '#fff'
+                }
+            },
+            theme: {
+                mode: 'dark'
             }
-        });
+        };
+
+        // Create new chart
+        priceChart = new ApexCharts(document.querySelector("#chart"), options);
+        priceChart.render();
 
         // Update price displays
         const priceInfo = document.getElementById('priceInfo');
@@ -217,7 +242,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle resize
     window.addEventListener('resize', function() {
         if (priceChart) {
-            priceChart.setSize(null, getChartHeight());
+            priceChart.updateOptions({
+                chart: {
+                    height: getChartHeight()
+                },
+                title: {
+                    style: {
+                        fontSize: window.innerWidth < 768 ? '14px' : '18px'
+                    }
+                }
+            });
         }
     });
 });
