@@ -89,24 +89,21 @@ async function updateChart() {
         priceChart = Highcharts.chart('chart', {
             chart: {
                 height: getChartHeight(),
-                backgroundColor: '#FFFF00',
+                backgroundColor: '#FFFDE7',
                 style: {
                     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
                 },
-                plotBackgroundColor: '#FFFF00',
+                plotBackgroundColor: '#FFFDE7',
                 zoomType: 'x',
                 events: {
                     load: function() {
                         this.chartBackground.css({
-                            fill: '#FFFF00'
+                            fill: '#FFFDE7'
                         });
-                        const chart = this;
-                        setTimeout(function() {
-                            chart.xAxis[0].setExtremes(
-                                yesterday.getTime(),
-                                dayAfterPrediction.getTime()
-                            );
-                        }, 100);
+                        this.xAxis[0].setExtremes(
+                            yesterday.getTime(),
+                            dayAfterPrediction.getTime()
+                        );
                     }
                 }
             },
@@ -170,41 +167,6 @@ async function updateChart() {
                 dashStyle: 'Dash',
                 lineWidth: 2
             }],
-            responsive: {
-                rules: [{
-                    condition: {
-                        maxWidth: 768
-                    },
-                    chartOptions: {
-                        chart: {
-                            height: 300
-                        },
-                        xAxis: {
-                            labels: {
-                                style: {
-                                    fontSize: '10px'
-                                }
-                            }
-                        },
-                        yAxis: {
-                            labels: {
-                                style: {
-                                    fontSize: '10px'
-                                }
-                            }
-                        },
-                        legend: {
-                            enabled: true,
-                            layout: 'horizontal',
-                            align: 'center',
-                            verticalAlign: 'bottom',
-                            itemStyle: {
-                                fontSize: '10px'
-                            }
-                        }
-                    }
-                }]
-            },
             plotOptions: {
                 series: {
                     animation: {
@@ -245,9 +207,6 @@ async function updateChart() {
                     text: 'All'
                 }],
                 selected: 0
-            },
-            chart: {
-                styledMode: false
             }
         });
 
@@ -260,73 +219,74 @@ async function updateChart() {
         stopLossInfo.style.display = 'block';
 
         currentPriceElement.innerHTML = `$${formatPrice(data.summary.current_price)} (as of ${currentDate})`;
-        predictedPriceElement.innerHTML = `$${formatPrice(data.summary.final_prediction)} (predicted for ${formatDate(finalDate)})`;
 
         const currentPrice = data.summary.current_price;
         const predictedPrice = data.summary.final_prediction;
         const percentChange = ((predictedPrice - currentPrice) / currentPrice) * 100;
+
+        // Add color class to the entire predicted price element
+        predictedPriceElement.className = predictedPrice > currentPrice ? 'text-success' : 'text-danger';
+        predictedPriceElement.innerHTML = `$${formatPrice(predictedPrice)} (predicted for ${formatDate(finalDate)})`;
+
         const stopLoss = currentPrice * 0.95; // 5% below current price
 
         let tradingAdvice = '';
         if (percentChange > 5) {
-            // Positive outlook
             tradingAdvice = `
                 <div class="row">
                     <div class="col-12">
-                        <h5 class="text-primary mb-3">AI Trading Recommendations for ${symbol}</h5>
-                        <div class="card bg-dark mb-3">
-                            <div class="card-body">
-                                <h6>If you own ${symbol}:</h6>
-                                <p class="text-success">HOLD → Consider selling at $${formatPrice(predictedPrice)} (${percentChange.toFixed(2)}% potential gain)</p>
-                                <p class="text-warning">Set stop-loss at $${formatPrice(stopLoss)}</p>
+                        <h5 class="text-dark mb-3">AI Trading Recommendations for ${symbol}</h5>
+                        <div class="card mb-3">
+                            <div class="card-body bg-white">
+                                <h6 class="text-dark">If you own ${symbol}:</h6>
+                                <p class="text-success fw-bold">HOLD → Consider selling at $${formatPrice(predictedPrice)} (${percentChange.toFixed(2)}% potential gain)</p>
+                                <p class="text-danger fw-bold">Set stop-loss at $${formatPrice(stopLoss)}</p>
                             </div>
                         </div>
-                        <div class="card bg-dark">
-                            <div class="card-body">
-                                <h6>If you don't own ${symbol}:</h6>
-                                <p class="text-info">WAIT → Consider buying if price dips below $${formatPrice(currentPrice * 0.98)}</p>
+                        <div class="card">
+                            <div class="card-body bg-white">
+                                <h6 class="text-dark">If you don't own ${symbol}:</h6>
+                                <p class="text-primary fw-bold">WAIT → Consider buying if price dips below $${formatPrice(currentPrice * 0.98)}</p>
                             </div>
                         </div>
                     </div>
                 </div>`;
         } else if (percentChange < -5) {
-            // Negative outlook
             tradingAdvice = `
                 <div class="row">
                     <div class="col-12">
-                        <h5 class="text-primary mb-3">AI Trading Recommendations for ${symbol}</h5>
-                        <div class="card bg-dark mb-3">
-                            <div class="card-body">
-                                <h6>If you own ${symbol}:</h6>
-                                <p class="text-danger">SELL → Price expected to drop to $${formatPrice(predictedPrice)} (${percentChange.toFixed(2)}% potential loss)</p>
-                                <p class="text-warning">Set stop-loss at $${formatPrice(stopLoss)}</p>
+                        <h5 class="text-dark mb-3">AI Trading Recommendations for ${symbol}</h5>
+                        <div class="card mb-3">
+                            <div class="card-body bg-white">
+                                <h6 class="text-dark">If you own ${symbol}:</h6>
+                                <p class="text-danger fw-bold">SELL → Price expected to drop to $${formatPrice(predictedPrice)} (${percentChange.toFixed(2)}% potential loss)</p>
+                                <p class="text-danger fw-bold">Set stop-loss at $${formatPrice(stopLoss)}</p>
                             </div>
                         </div>
-                        <div class="card bg-dark">
-                            <div class="card-body">
-                                <h6>If you don't own ${symbol}:</h6>
-                                <p class="text-warning">WAIT → Consider buying after price stabilizes below $${formatPrice(predictedPrice)}</p>
+                        <div class="card">
+                            <div class="card-body bg-white">
+                                <h6 class="text-dark">If you don't own ${symbol}:</h6>
+                                <p class="text-primary fw-bold">WAIT → Consider buying after price stabilizes below $${formatPrice(predictedPrice)}</p>
                             </div>
                         </div>
                     </div>
                 </div>`;
         } else {
-            // Neutral outlook
             tradingAdvice = `
                 <div class="row">
                     <div class="col-12">
-                        <h5 class="text-primary mb-3">AI Trading Recommendations for ${symbol}</h5>
-                        <div class="card bg-dark mb-3">
-                            <div class="card-body">
-                                <h6>If you own ${symbol}:</h6>
-                                <p class="text-info">HOLD → Price expected to remain stable around $${formatPrice(currentPrice)}</p>
-                                <p class="text-warning">Set stop-loss at $${formatPrice(stopLoss)}</p>
+                        <h5 class="text-dark mb-3">AI Trading Recommendations for ${symbol}</h5>
+                        <div class="card mb-3">
+                            <div class="card-body bg-white">
+                                <h6 class="text-dark">If you own ${symbol}:</h6>
+                                <p class="text-primary fw-bold">HOLD → Price expected to remain stable around $${formatPrice(currentPrice)}</p>
+                                <p class="text-danger fw-bold">Set stop-loss at $${formatPrice(stopLoss)}</p>
                             </div>
                         </div>
-                        <div class="card bg-dark">
-                            <div class="card-body">
-                                <h6>If you don't own ${symbol}:</h6>
-                                <p class="text-info">NEUTRAL → Consider small positions if price drops below $${formatPrice(currentPrice * 0.98)}</p>
+                        <div class="card">
+                            <div class="card-body bg-white">
+                                <h6 class="text-dark">If you don't own ${symbol}:</h6>
+                                <p class="text-primary fw-bold">NEUTRAL → Consider small positions if price drops below $${formatPrice(currentPrice * 0.98)}</p>
                             </div>
                         </div>
                     </div>
@@ -368,8 +328,8 @@ document.addEventListener('DOMContentLoaded', function() {
             priceChart.setSize(null, getChartHeight());
             const yesterday = new Date();
             yesterday.setDate(yesterday.getDate() - 1);
-            const dayAfterPrediction = new Date(finalDate);
-            dayAfterPrediction.setDate(dayAfterPrediction.getDate() + 1);
+            const dayAfterPrediction = new Date();
+            dayAfterPrediction.setDate(dayAfterPrediction.getDate() + parseInt(document.getElementById('predictPeriodSelect').value) + 1);
             priceChart.xAxis[0].setExtremes(
                 yesterday.getTime(),
                 dayAfterPrediction.getTime()

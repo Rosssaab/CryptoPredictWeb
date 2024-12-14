@@ -69,12 +69,12 @@
     <div class="container">
         <div class="card bg-secondary text-light shadow-sm mb-4">
             <div class="card-body">
-                <h1 class="card-title text-light mb-4 fs-3 fs-md-2">Cryptocurrency Price Predictor</h1>
+                <h1 class="card-title text-dark mb-4 fs-3 fs-md-2">Cryptocurrency Price Predictor</h1>
                 <div class="controls">
                     <div class="row g-3">
                         <div class="col-12 col-lg-3">
                             <div class="form-group d-flex flex-column h-100">
-                                <label for="cryptoSelect" class="form-label">Cryptocurrency</label>
+                                <label for="cryptoSelect" class="form-label text-dark">Cryptocurrency</label>
                                 <select id="cryptoSelect" class="form-select flex-grow-1">
                                     <option value="" selected disabled>Select a cryptocurrency</option>
                                     {% for crypto in cryptos %}
@@ -85,7 +85,7 @@
                         </div>
                         <div class="col-12 col-lg-3">
                             <div class="form-group d-flex flex-column h-100">
-                                <label for="periodSelect" class="form-label">Historical Period</label>
+                                <label for="periodSelect" class="form-label text-dark">Historical Period</label>
                                 <select id="periodSelect" class="form-select flex-grow-1">
                                     <option value="3mo">3 Months</option>
                                     <option value="6mo">6 Months</option>
@@ -97,7 +97,7 @@
                         </div>
                         <div class="col-12 col-lg-3">
                             <div class="form-group d-flex flex-column h-100">
-                                <label for="predictPeriodSelect" class="form-label">Prediction Period</label>
+                                <label for="predictPeriodSelect" class="form-label text-dark">Prediction Period</label>
                                 <select id="predictPeriodSelect" class="form-select flex-grow-1">
                                     <option value="1">1 Day</option>
                                     <option value="7" selected>1 Week</option>
@@ -109,7 +109,7 @@
                         </div>
                         <div class="col-12 col-lg-3">
                             <div class="form-group d-flex flex-column h-100">
-                                <label class="form-label">&nbsp;</label>
+                                <label class="form-label text-dark">&nbsp;</label>
                                 <button id="predictBtn" class="btn btn-primary flex-grow-1">Predict</button>
                             </div>
                         </div>
