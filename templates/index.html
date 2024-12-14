@@ -41,6 +41,7 @@
             color: #000 !important;
         }
         #predictedPrice {
+            font-size: 1.5rem !important;
             font-weight: bold !important;
         }
     </style>
@@ -109,8 +110,11 @@
                         </div>
                         <div class="col-12 col-lg-3">
                             <div class="form-group d-flex flex-column h-100">
-                                <label class="form-label text-dark">&nbsp;</label>
-                                <button id="predictBtn" class="btn btn-primary flex-grow-1">Predict</button>
+                                <label class="form-label text-dark">Actions</label>
+                                <div class="d-flex gap-2">
+                                    <button id="suggestBtn" class="btn btn-success flex-grow-1">Suggest Coins</button>
+                                    <button id="predictBtn" class="btn btn-primary flex-grow-1">Predict</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -256,6 +260,36 @@
                 </div>
                 <div class="modal-footer bg-dark">
                     <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Suggestion Modal -->
+    <div class="modal fade" id="suggestionModal" tabindex="-1" aria-labelledby="suggestionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-dark">
+                <div class="modal-header bg-success">
+                    <h5 class="modal-title text-white" id="suggestionModalLabel">AI Coin Suggestions</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-light">
+                    <p class="mb-4">
+                        Our AI will analyze the top 50 cryptocurrencies and predict which ones have the highest potential for growth over your selected prediction period of <span id="selectedPeriod">7 days</span>.
+                    </p>
+                    <div id="suggestionLoading" class="text-center" style="display: none;">
+                        <div class="spinner-border text-success mb-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p>Analyzing market data and generating suggestions...</p>
+                    </div>
+                    <div id="suggestionResults" style="display: none;">
+                        <!-- Results will be populated here -->
+                    </div>
+                    <button id="analyzeCoinBtn" class="btn btn-success w-100">Analyze Top Coins</button>
+                </div>
+                <div class="modal-footer bg-dark">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
