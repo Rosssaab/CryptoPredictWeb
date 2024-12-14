@@ -354,12 +354,13 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
 
             data.suggestions.forEach((coin, index) => {
+                const growth = parseFloat(coin.predicted_growth) || 0;
                 html += `
                     <div class="list-group-item bg-dark text-light border-success">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="mb-1">${index + 1}. ${coin.symbol}</h6>
-                                <p class="mb-1 text-success">Predicted Growth: ${coin.predicted_growth.toFixed(2)}%</p>
+                                <p class="mb-1 text-success">Predicted Growth: ${growth.toFixed(2)}%</p>
                             </div>
                             <button class="btn btn-outline-success btn-sm select-coin" 
                                     data-coin="${coin.symbol}">

@@ -273,70 +273,38 @@ def suggest_coins():
         # Filter for coins with positive 24h change first
         positive_pairs = [t for t in usdt_pairs if float(t['priceChangePercent']) > 0]
         
-        # Sort by volume and get top 25 (increased from 20 to ensure we have enough after filtering)
+        # Sort by volume and get top 25
         positive_pairs.sort(key=lambda x: float(x['volume']), reverse=True)
-        top_pairs = positive_pairs[:25]  # Increased pool size
+        top_pairs = positive_pairs[:25]
         
         suggestions = []
-        for ticker in top_pairs:
+        for ticker in top_pairs[:5]:  # Process top 5 only
             try:
-                symbol = ticker['symbol'][:-4]  # Remove USDT
-                print(f"Processing {symbol}...")
-                
-                # Get current price and metrics
+                symbol = ticker['symbol'][:-4]
                 current_price = float(ticker['lastPrice'])
                 price_change_24h = float(ticker['priceChangePercent'])
-                volume_24h = float(ticker['volume'])
                 
-                # Calculate additional metrics
-                price_change_7d = float(ticker.get('priceChangePercent7d', price_change_24h * 1.5))
-                volume_change = float(ticker.get('volumeChangePercent', 0))
-                
-                # Calculate predicted growth using multiple factors
-                momentum_factor = price_change_24h * 0.3 + price_change_7d * 0.7
-                volume_factor = min(volume_change * 0.5, 20)  # Cap volume impact
-                
-                # Weighted prediction calculation
-                predicted_growth = (
-                    momentum_factor * 0.6 +  # Price momentum
-                    volume_factor * 0.4    # Volume trend
-                )
-                
-                # Ensure minimum positive growth
-                predicted_growth = max(predicted_growth, price_change_24h * 1.2)
-                
-                # Calculate predicted price
+                # Calculate predicted growth (simplified for example)
+                predicted_growth = price_change_24h * 1.5  # Simple multiplier
                 predicted_price = current_price * (1 + (predicted_growth / 100))
                 
-                # Only include if predicted growth is positive
-                if predicted_growth > 0:
-                    suggestions.append({
-                        "symbol": symbol,
-                        "current_price": current_price,
-                        "predicted_price": predicted_price,
-                        "predicted_growth": predicted_growth,
-                        "price_change_24h": price_change_24h,
-                        "volume_24h": volume_24h
-                    })
+                suggestions.append({
+                    "symbol": symbol,
+                    "current_price": float(current_price),
+                    "predicted_price": float(predicted_price),
+                    "predicted_growth": float(predicted_growth),
+                    "price_change_24h": float(price_change_24h)
+                })
                 
             except Exception as e:
-                print(f"Error analyzing {symbol}: {str(e)}")
+                print(f"Error processing {symbol}: {str(e)}")
                 continue
         
-        # Sort by predicted growth and get top 5 (changed from 3)
+        # Sort by predicted growth
         suggestions.sort(key=lambda x: x['predicted_growth'], reverse=True)
-        top_suggestions = suggestions[:5]  # Changed from [:3] to [:5]
+        suggestions = suggestions[:3]  # Get top 3
         
-        # Format numbers for response
-        formatted_suggestions = [{
-            "symbol": s["symbol"],
-            "current_price": "{:.8f}".format(s["current_price"]),
-            "predicted_price": "{:.8f}".format(s["predicted_price"]),
-            "predicted_growth": "{:.2f}".format(s["predicted_growth"]),
-            "price_change_24h": "{:.2f}".format(s["price_change_24h"])
-        } for s in top_suggestions]
-        
-        return jsonify({"suggestions": formatted_suggestions})
+        return jsonify({"suggestions": suggestions})
         
     except Exception as e:
         print(f"Suggestion error: {str(e)}")
