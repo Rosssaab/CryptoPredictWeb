@@ -22,7 +22,7 @@ function generatePriceVariations(startPrice, endPrice, numPoints) {
     return prices;
 }
 
-let priceChart = null; // Global chart reference
+let priceChart = null;
 
 async function updateChart() {
     const symbol = document.getElementById('cryptoSelect').value;
@@ -33,7 +33,6 @@ async function updateChart() {
     
     document.getElementById('loading').style.display = 'block';
     
-    // Destroy existing chart if it exists
     if (priceChart) {
         priceChart.destroy();
     }
@@ -66,150 +65,275 @@ async function updateChart() {
             throw new Error(data.error);
         }
 
-        // Generate varied predictions
         const startPrice = data.historical.prices[data.historical.prices.length - 1];
         const endPrice = data.summary.final_prediction;
         const numPredictionPoints = data.predictions.dates.length;
         const variedPredictions = generatePriceVariations(startPrice, endPrice, numPredictionPoints);
 
-        // Prepare data series
-        const historicalSeries = data.historical.prices.map((price, index) => ({
-            x: new Date(data.historical.dates[index]).getTime(),
-            y: price
-        }));
+        const historicalSeries = data.historical.prices.map((price, index) => [
+            new Date(data.historical.dates[index]).getTime(),
+            price
+        ]);
 
-        const predictionSeries = variedPredictions.map((price, index) => ({
-            x: new Date(data.predictions.dates[index]).getTime(),
-            y: price
-        }));
+        const predictionSeries = variedPredictions.map((price, index) => [
+            new Date(data.predictions.dates[index]).getTime(),
+            price
+        ]);
 
-        // ApexCharts configuration
-        const options = {
-            series: [{
-                name: 'Historical',
-                data: historicalSeries
-            }, {
-                name: 'AI Predictions',
-                data: predictionSeries
-            }],
+        // Calculate date ranges for zoom
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const dayAfterPrediction = new Date(finalDate);
+        dayAfterPrediction.setDate(dayAfterPrediction.getDate() + 1);
+
+        priceChart = Highcharts.chart('chart', {
             chart: {
-                type: 'line',
                 height: getChartHeight(),
-                animations: {
-                    enabled: true,
-                    easing: 'easeinout',
-                    speed: 800
+                backgroundColor: '#FFFF00',
+                style: {
+                    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
                 },
-                toolbar: {
-                    show: window.innerWidth >= 768,
-                    tools: {
-                        download: true,
-                        selection: true,
-                        zoom: true,
-                        zoomin: true,
-                        zoomout: true,
-                        pan: true,
-                        reset: true
+                plotBackgroundColor: '#FFFF00',
+                zoomType: 'x',
+                events: {
+                    load: function() {
+                        this.chartBackground.css({
+                            fill: '#FFFF00'
+                        });
+                        const chart = this;
+                        setTimeout(function() {
+                            chart.xAxis[0].setExtremes(
+                                yesterday.getTime(),
+                                dayAfterPrediction.getTime()
+                            );
+                        }, 100);
                     }
-                },
-                zoom: {
-                    enabled: window.innerWidth >= 768
                 }
             },
-            stroke: {
-                curve: 'smooth',
-                width: [2, 2],
-                dashArray: [0, 5]
-            },
-            colors: ['#2C3E50', '#E74C3C'],
             title: {
                 text: `${symbol} Price Prediction`,
-                align: 'left',
                 style: {
                     fontSize: window.innerWidth < 768 ? '14px' : '18px',
-                    color: '#fff'
+                    color: '#000000'
                 }
             },
-            xaxis: {
+            xAxis: {
                 type: 'datetime',
                 labels: {
+                    format: '{value:%e %b %Y}',
                     style: {
-                        colors: '#fff'
-                    },
-                    datetimeFormatter: {
-                        year: 'yyyy',
-                        month: 'MMM \'yy',
-                        day: 'dd MMM',
-                        hour: 'HH:mm'
+                        fontSize: window.innerWidth < 768 ? '10px' : '12px'
+                    }
+                },
+                min: yesterday.getTime(),
+                max: dayAfterPrediction.getTime(),
+                events: {
+                    afterSetExtremes: function(e) {
+                        if (!e.trigger) {
+                            this.setExtremes(
+                                yesterday.getTime(),
+                                dayAfterPrediction.getTime()
+                            );
+                        }
                     }
                 }
             },
-            yaxis: {
-                labels: {
-                    style: {
-                        colors: '#fff'
-                    },
-                    formatter: function(value) {
-                        return '$' + formatPrice(value);
-                    }
-                },
+            yAxis: {
                 title: {
-                    text: 'Price (USD)',
-                    style: {
-                        color: '#fff'
+                    text: 'Price (USD)'
+                },
+                labels: {
+                    formatter: function() {
+                        return '$' + formatPrice(this.value);
                     }
                 }
             },
             tooltip: {
                 shared: true,
-                x: {
-                    format: 'dd MMM yyyy'
-                },
-                y: {
-                    formatter: function(value) {
-                        return '$' + formatPrice(value);
+                formatter: function() {
+                    let tooltip = '<b>' + Highcharts.dateFormat('%e %b %Y', this.x) + '</b><br/>';
+                    this.points.forEach(point => {
+                        tooltip += `${point.series.name}: <b>$${formatPrice(point.y)}</b><br/>`;
+                    });
+                    return tooltip;
+                }
+            },
+            series: [{
+                name: 'Historical',
+                data: historicalSeries,
+                color: '#2C3E50',
+                lineWidth: 2
+            }, {
+                name: 'AI Predictions',
+                data: predictionSeries,
+                color: '#E74C3C',
+                dashStyle: 'Dash',
+                lineWidth: 2
+            }],
+            responsive: {
+                rules: [{
+                    condition: {
+                        maxWidth: 768
+                    },
+                    chartOptions: {
+                        chart: {
+                            height: 300
+                        },
+                        xAxis: {
+                            labels: {
+                                style: {
+                                    fontSize: '10px'
+                                }
+                            }
+                        },
+                        yAxis: {
+                            labels: {
+                                style: {
+                                    fontSize: '10px'
+                                }
+                            }
+                        },
+                        legend: {
+                            enabled: true,
+                            layout: 'horizontal',
+                            align: 'center',
+                            verticalAlign: 'bottom',
+                            itemStyle: {
+                                fontSize: '10px'
+                            }
+                        }
+                    }
+                }]
+            },
+            plotOptions: {
+                series: {
+                    animation: {
+                        duration: 1000
+                    },
+                    marker: {
+                        enabled: false
                     }
                 }
             },
-            grid: {
-                borderColor: '#334455',
-                strokeDashArray: 5,
+            credits: {
+                enabled: false
             },
-            legend: {
-                position: 'top',
-                horizontalAlign: 'right',
-                labels: {
-                    colors: '#fff'
-                }
+            rangeSelector: {
+                enabled: true,
+                buttons: [{
+                    type: 'day',
+                    count: 7,
+                    text: '1W'
+                }, {
+                    type: 'month',
+                    count: 1,
+                    text: '1M'
+                }, {
+                    type: 'month',
+                    count: 3,
+                    text: '3M'
+                }, {
+                    type: 'month',
+                    count: 6,
+                    text: '6M'
+                }, {
+                    type: 'year',
+                    count: 1,
+                    text: '1Y'
+                }, {
+                    type: 'all',
+                    text: 'All'
+                }],
+                selected: 0
             },
-            theme: {
-                mode: 'dark'
+            chart: {
+                styledMode: false
             }
-        };
+        });
 
-        // Create new chart
-        priceChart = new ApexCharts(document.querySelector("#chart"), options);
-        priceChart.render();
-
-        // Update price displays
         const priceInfo = document.getElementById('priceInfo');
         const stopLossInfo = document.getElementById('stopLossInfo');
-        const currentPrice = document.getElementById('currentPrice');
-        const predictedPrice = document.getElementById('predictedPrice');
+        const currentPriceElement = document.getElementById('currentPrice');
+        const predictedPriceElement = document.getElementById('predictedPrice');
 
         priceInfo.style.display = 'block';
         stopLossInfo.style.display = 'block';
 
-        currentPrice.innerHTML = `$${formatPrice(data.summary.current_price)} (as of ${currentDate})`;
-        predictedPrice.innerHTML = `$${formatPrice(data.summary.final_prediction)} (predicted for ${formatDate(finalDate)})`;
+        currentPriceElement.innerHTML = `$${formatPrice(data.summary.current_price)} (as of ${currentDate})`;
+        predictedPriceElement.innerHTML = `$${formatPrice(data.summary.final_prediction)} (predicted for ${formatDate(finalDate)})`;
 
-        // Trading recommendations
-        stopLossInfo.innerHTML = `
-            <h5>AI Trading Recommendations</h5>
-            <p>Current Price: <strong>$${formatPrice(data.summary.current_price)}</strong></p>
-            <p>Predicted Price: <strong>$${formatPrice(data.summary.final_prediction)}</strong></p>
-            <p>Recommended Stop-Loss: <strong>$${formatPrice(data.summary.current_price * 0.95)}</strong></p>
-        `;
+        const currentPrice = data.summary.current_price;
+        const predictedPrice = data.summary.final_prediction;
+        const percentChange = ((predictedPrice - currentPrice) / currentPrice) * 100;
+        const stopLoss = currentPrice * 0.95; // 5% below current price
+
+        let tradingAdvice = '';
+        if (percentChange > 5) {
+            // Positive outlook
+            tradingAdvice = `
+                <div class="row">
+                    <div class="col-12">
+                        <h5 class="text-primary mb-3">AI Trading Recommendations for ${symbol}</h5>
+                        <div class="card bg-dark mb-3">
+                            <div class="card-body">
+                                <h6>If you own ${symbol}:</h6>
+                                <p class="text-success">HOLD → Consider selling at $${formatPrice(predictedPrice)} (${percentChange.toFixed(2)}% potential gain)</p>
+                                <p class="text-warning">Set stop-loss at $${formatPrice(stopLoss)}</p>
+                            </div>
+                        </div>
+                        <div class="card bg-dark">
+                            <div class="card-body">
+                                <h6>If you don't own ${symbol}:</h6>
+                                <p class="text-info">WAIT → Consider buying if price dips below $${formatPrice(currentPrice * 0.98)}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+        } else if (percentChange < -5) {
+            // Negative outlook
+            tradingAdvice = `
+                <div class="row">
+                    <div class="col-12">
+                        <h5 class="text-primary mb-3">AI Trading Recommendations for ${symbol}</h5>
+                        <div class="card bg-dark mb-3">
+                            <div class="card-body">
+                                <h6>If you own ${symbol}:</h6>
+                                <p class="text-danger">SELL → Price expected to drop to $${formatPrice(predictedPrice)} (${percentChange.toFixed(2)}% potential loss)</p>
+                                <p class="text-warning">Set stop-loss at $${formatPrice(stopLoss)}</p>
+                            </div>
+                        </div>
+                        <div class="card bg-dark">
+                            <div class="card-body">
+                                <h6>If you don't own ${symbol}:</h6>
+                                <p class="text-warning">WAIT → Consider buying after price stabilizes below $${formatPrice(predictedPrice)}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+        } else {
+            // Neutral outlook
+            tradingAdvice = `
+                <div class="row">
+                    <div class="col-12">
+                        <h5 class="text-primary mb-3">AI Trading Recommendations for ${symbol}</h5>
+                        <div class="card bg-dark mb-3">
+                            <div class="card-body">
+                                <h6>If you own ${symbol}:</h6>
+                                <p class="text-info">HOLD → Price expected to remain stable around $${formatPrice(currentPrice)}</p>
+                                <p class="text-warning">Set stop-loss at $${formatPrice(stopLoss)}</p>
+                            </div>
+                        </div>
+                        <div class="card bg-dark">
+                            <div class="card-body">
+                                <h6>If you don't own ${symbol}:</h6>
+                                <p class="text-info">NEUTRAL → Consider small positions if price drops below $${formatPrice(currentPrice * 0.98)}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        stopLossInfo.innerHTML = tradingAdvice;
 
     } catch (error) {
         console.error('Error:', error);
@@ -239,19 +363,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     document.getElementById('predictBtn').addEventListener('click', updateChart);
     
-    // Handle resize
     window.addEventListener('resize', function() {
         if (priceChart) {
-            priceChart.updateOptions({
-                chart: {
-                    height: getChartHeight()
-                },
-                title: {
-                    style: {
-                        fontSize: window.innerWidth < 768 ? '14px' : '18px'
-                    }
-                }
-            });
+            priceChart.setSize(null, getChartHeight());
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const dayAfterPrediction = new Date(finalDate);
+            dayAfterPrediction.setDate(dayAfterPrediction.getDate() + 1);
+            priceChart.xAxis[0].setExtremes(
+                yesterday.getTime(),
+                dayAfterPrediction.getTime()
+            );
         }
     });
 });
