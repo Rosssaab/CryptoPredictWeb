@@ -270,46 +270,73 @@ def suggest_coins():
         tickers = client.get_ticker()
         usdt_pairs = [t for t in tickers if t['symbol'].endswith('USDT')]
         
-        # Filter for coins with positive 24h change first
+        # Filter and sort by volume
         positive_pairs = [t for t in usdt_pairs if float(t['priceChangePercent']) > 0]
-        
-        # Sort by volume and get top 25
         positive_pairs.sort(key=lambda x: float(x['volume']), reverse=True)
-        top_pairs = positive_pairs[:25]
+        top_pairs = positive_pairs[:10]  # Get top 10 by volume
         
         suggestions = []
-        for ticker in top_pairs[:5]:  # Process top 5 only
+        for ticker in top_pairs:
             try:
                 symbol = ticker['symbol'][:-4]
-                current_price = float(ticker['lastPrice'])
-                price_change_24h = float(ticker['priceChangePercent'])
+                print(f"Analyzing {symbol}...")
                 
-                # Calculate predicted growth (simplified for example)
-                predicted_growth = price_change_24h * 1.5  # Simple multiplier
-                predicted_price = current_price * (1 + (predicted_growth / 100))
+                # Use the same data fetching and prediction logic as the main predict route
+                data = fetch_crypto_data(symbol, period='3mo')  # Use shorter period for quick analysis
+                if data.empty:
+                    continue
+                    
+                X, y, feature_scaler, price_scaler = prepare_data(data)
+                if len(X) == 0 or len(y) == 0:
+                    continue
                 
-                suggestions.append({
-                    "symbol": symbol,
-                    "current_price": float(current_price),
-                    "predicted_price": float(predicted_price),
-                    "predicted_growth": float(predicted_growth),
-                    "price_change_24h": float(price_change_24h)
-                })
+                # Create and train model
+                model = create_and_train_model(X, y)
+                
+                # Calculate prediction for the specified period
+                current_price = float(data['Close'].iloc[-1])
+                
+                # Generate future features and prediction
+                last_day = len(X)
+                future_feature = np.array([
+                    last_day + predict_days,
+                    data['SMA_20'].iloc[-1],
+                    data['SMA_50'].iloc[-1],
+                    data['RSI'].iloc[-1],
+                    data['Volatility'].iloc[-1],
+                    data['Volume'].iloc[-1]
+                ]).reshape(1, -1)
+                
+                scaled_future_feature = feature_scaler.transform(future_feature)
+                predicted_price = float(price_scaler.inverse_transform(
+                    model.predict(scaled_future_feature).reshape(-1, 1)
+                )[0][0])
+                
+                # Calculate predicted growth as percentage
+                predicted_growth = ((predicted_price - current_price) / current_price) * 100
+                
+                if predicted_growth > 0:  # Only include positive predictions
+                    suggestions.append({
+                        "symbol": symbol,
+                        "current_price": current_price,
+                        "predicted_price": predicted_price,
+                        "predicted_growth": predicted_growth
+                    })
                 
             except Exception as e:
-                print(f"Error processing {symbol}: {str(e)}")
+                print(f"Error analyzing {symbol}: {str(e)}")
                 continue
         
-        # Sort by predicted growth
+        # Sort by predicted growth and get top 3
         suggestions.sort(key=lambda x: x['predicted_growth'], reverse=True)
-        suggestions = suggestions[:3]  # Get top 3
+        suggestions = suggestions[:3]
         
         return jsonify({"suggestions": suggestions})
         
     except Exception as e:
         print(f"Suggestion error: {str(e)}")
         return jsonify({"error": str(e)}), 400
-
+    
 if __name__ == '__main__':
     print("Starting Crypto Prediction server on port 8087...")
     serve(app, host='127.0.0.1', port=8087)
